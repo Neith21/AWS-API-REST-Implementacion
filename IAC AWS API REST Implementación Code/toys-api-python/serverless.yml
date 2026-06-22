@@ -1,0 +1,116 @@
+org: syzygy
+
+app: toys-api-python
+
+service: toys-api-python
+
+provider:
+  name: aws
+  runtime: python3.12
+  region: us-east-1
+  memorySize: 128
+  stage: ${opt:stage, 'dev'}
+  httpApi:
+    cors: true
+
+resources:
+  Resources:
+    IacToysTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: iac_toys
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+functions:
+  postToy:
+    handler: src/handlers/postToy.lambda_handler
+    events:
+      - httpApi:
+          path: /toy
+          method: POST
+    iam:
+      role:
+        statements:
+          - Effect: Allow
+            Action:
+              - dynamodb:PutItem
+            Resource: 
+              Fn::GetAtt: 
+                - IacToysTable
+                - Arn
+
+  getToys:
+    handler: src/handlers/getToys.lambda_handler
+    events:
+      - httpApi:
+          path: /toys
+          method: GET
+    iam:
+      role:
+        statements:
+          - Effect: Allow
+            Action:
+              - dynamodb:Scan
+            Resource: 
+              Fn::GetAtt: 
+                - IacToysTable
+                - Arn
+
+  getToy:
+    handler: src/handlers/getToy.lambda_handler
+    events:
+      - httpApi:
+          path: /toy/{id}
+          method: GET
+    iam:
+      role:
+        statements:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+            Resource: 
+              Fn::GetAtt: 
+                - IacToysTable
+                - Arn
+
+  putToy:
+    handler: src/handlers/putToy.lambda_handler
+    events:
+      - httpApi:
+          path: /toy/{id}
+          method: PUT
+    iam:
+      role:
+        statements:
+          - Effect: Allow
+            Action:
+              - dynamodb:UpdateItem
+              - dynamodb:GetItem
+            Resource: 
+              Fn::GetAtt: 
+                - IacToysTable
+                - Arn
+
+  deleteToy:
+    handler: src/handlers/deleteToy.lambda_handler
+    events:
+      - httpApi:
+          path: /toy/{id}
+          method: DELETE
+    iam:
+      role:
+        statements:
+          - Effect: Allow
+            Action:
+              - dynamodb:DeleteItem
+              - dynamodb:GetItem
+            Resource: 
+              Fn::GetAtt: 
+                - IacToysTable
+                - Arn
